@@ -1,8 +1,9 @@
 from backend.user import load_users, User, Admin, Waiter, Chef
 from backend.menuitem import MenuItem
-from backend.order import Order, OrderItem
+from backend.order import Order, OrderItem, save_order, get_pending_orders
 from backend.receipt import Receipt
 import sys
+import os
 
 CURRENT_USER = None
 
@@ -21,6 +22,9 @@ MENU_ITEMS = [
 ]
 
 def main_menu():
+    if not os.path.exists("data"):
+        os.makedirs("data")
+
     while True:
         print("\n" + "=" * 30)
         print("RESTAURANT MANAGEMENT SYSTEM CLI")
@@ -207,14 +211,14 @@ def run_pos_cli():
         elif choice == '4':
             if not current_order.items:
                 print("ERROR: Cannot submit empty order.")
-            elif current_order.update_status(Order.PENDING):
-                view_order_summary(current_order)
-                receipt = Receipt(current_order)
-                print("\n" + receipt.generate_simple_receipt())
-                print("\n✓ Order submitted to kitchen!")
-                break
             else:
-                print("ERROR: Failed to submit order.")
+                current_order.update_status(Order.PENDING)
+                save_order(current_order)
+                
+                print("\n" + "="*40)
+                print(f"✓ Order {current_order.order_id} sent to KITCHEN successfully!")
+                print("="*40)
+                break
         
         elif choice == '5':
             confirm = input("Are you sure you want to cancel this order? (yes/no): ").strip().lower()
@@ -236,10 +240,56 @@ def run_kitchen_cli():
         print("\nACCESS DENIED. You must log in as a CHEF to view the kitchen display.")
         return
     
-    print("\n--- Kitchen Display System ---")
-    print(f"Welcome, {CURRENT_USER.get_username()}!")
-    print("Chef view: Here you would see a list of PENDING orders.")
-    print("e.g. Order ORD-XXXX is PENDING.")
+    print(f"\n--- Kitchen Display System (Chef: {CURRENT_USER.get_username()}) ---")
+    
+    while True:
+        pending_orders = get_pending_orders()
+        
+        print("\n" + "="*60)
+        print(f"PENDING ORDERS QUEUE ({len(pending_orders)})")
+        print("="*60)
+        
+        if not pending_orders:
+            print("No pending orders. Waiting for waiters...")
+        else:
+            for i, order in enumerate(pending_orders, 1):
+                items_str = ", ".join([f"{item.quantity}x {item.name}" for item in order.items])
+                print(f"{i}. [#{order.order_id}] Table: {order.customer_id}")
+                print(f"   Time: {order.created_at.strftime('%H:%M')} | Items: {items_str}")
+                print("-" * 60)
+
+        print("\nOPTIONS:")
+        print(" [R] Refresh List")
+        print(" [Number] Complete Order (e.g., 1)")
+        print(" [B] Back to Main Menu")
+        
+        choice = input("Action: ").strip().upper()
+        
+        if choice == 'B':
+            break
+        elif choice == 'R':
+            continue
+        elif choice.isdigit():
+            idx = int(choice) - 1
+            if 0 <= idx < len(pending_orders):
+                order_to_complete = pending_orders[idx]
+                
+                order_to_complete.update_status(Order.COMPLETED)
+                save_order(order_to_complete)
+                
+                receipt = Receipt(order_to_complete)
+                file_path = receipt.save_to_file()
+                
+                print(f"\n>>> Order {order_to_complete.order_id} marked COMPLETED! <<<")
+                print(f">>> Receipt generated automatically at: {file_path}")
+                print("-" * 40)
+                print(receipt.generate_simple_receipt())
+                print("-" * 40)
+                input("\nPress Enter to continue...")
+            else:
+                print("ERROR: Invalid order number.")
+        else:
+            print("Invalid option.")
 
 def run_manager_cli():
     global CURRENT_USER

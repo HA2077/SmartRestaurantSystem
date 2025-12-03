@@ -1,7 +1,10 @@
 from datetime import datetime
 from typing import List, Dict
 import uuid
+import json
+import os
 
+DATA_FILE = "data/orders.json"
 
 class OrderItem:
     def __init__(self, product_id: str, name: str, price: float, quantity: int = 1):
@@ -13,6 +16,18 @@ class OrderItem:
     @property
     def subtotal(self) -> float:
         return self.price * self.quantity
+
+    def to_dict(self):
+        return {
+            "product_id": self.product_id,
+            "name": self.name,
+            "price": self.price,
+            "quantity": self.quantity
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(data["product_id"], data["name"], data["price"], data["quantity"])
 
 
 class Order:
@@ -56,7 +71,6 @@ class Order:
                     item.quantity -= quantity
                     self.updated_at = datetime.now()
                     return True
-        
         return False
     
     def get_total(self) -> float:
@@ -75,8 +89,8 @@ class Order:
         if new_status == self.PENDING and not self.items:
             return False
         
-        if new_status == self.COMPLETED and self.status != self.PROCESSING:
-            return False
+        if new_status == self.COMPLETED and self.status != self.PROCESSING and self.status != self.PENDING:
+            pass 
         
         self.status = new_status
         self.updated_at = datetime.now()
@@ -85,3 +99,56 @@ class Order:
     def clear_order(self) -> None:
         self.items.clear()
         self.updated_at = datetime.now()
+
+    def to_dict(self):
+        return {
+            "order_id": self.order_id,
+            "customer_id": self.customer_id,
+            "status": self.status,
+            "created_at": self.created_at.isoformat(),
+            "items": [item.to_dict() for item in self.items]
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        order = cls(data["customer_id"], data["order_id"])
+        order.status = data["status"]
+        order.created_at = datetime.fromisoformat(data["created_at"])
+        order.items = [OrderItem.from_dict(item) for item in data["items"]]
+        return order
+
+
+def ensure_data_dir():
+    if not os.path.exists("data"):
+        os.makedirs("data")
+    if not os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "w") as f:
+            json.dump([], f)
+
+def load_orders() -> List[Order]:
+    ensure_data_dir()
+    try:
+        with open(DATA_FILE, "r") as f:
+            data = json.load(f)
+            return [Order.from_dict(o) for o in data]
+    except (json.JSONDecodeError, FileNotFoundError):
+        return []
+
+def save_order(order: Order):
+    orders = load_orders()
+    existing_found = False
+    for i, o in enumerate(orders):
+        if o.order_id == order.order_id:
+            orders[i] = order
+            existing_found = True
+            break
+    
+    if not existing_found:
+        orders.append(order)
+    
+    with open(DATA_FILE, "w") as f:
+        json.dump([o.to_dict() for o in orders], f, indent=4)
+
+def get_pending_orders() -> List[Order]:
+    orders = load_orders()
+    return [o for o in orders if o.status == Order.PENDING]

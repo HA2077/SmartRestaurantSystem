@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Dict
 import uuid
+import os
 from .order import Order 
 
 
@@ -99,3 +100,15 @@ class Receipt:
             return self.generate_detailed_receipt()
         else:
             raise ValueError(f"Invalid receipt type: {receipt_type}")
+
+    def save_to_file(self):
+        if not os.path.exists("receipts"):
+            os.makedirs("receipts")
+        
+        filename = f"receipts/{self.receipt_id}.txt"
+        content = self.generate_detailed_receipt()
+        
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(content)
+        
+        return filename
