@@ -41,6 +41,11 @@ def save_users(users, filename="data/users.json"):
     with open(filename, 'w') as f:
         json.dump([user.to_dict() for user in users], f, indent=4)
 
+def save_users(users, filename="data/users.json"):
+    user_data = [user.to_dict() for user in users]
+    with open(filename, 'w') as f:
+        json.dump(user_data, f, indent=4)
+
 def load_users(filename="data/users.json"):
     try:
         with open(filename, 'r') as f:

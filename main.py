@@ -1,6 +1,6 @@
-from backend.user import load_users, User, Admin, Waiter, Chef
+from backend.user import save_users,load_users, User, Admin, Waiter, Chef
 from backend.menuitem import MenuItem
-from backend.order import Order, OrderItem, save_order, get_pending_orders
+from backend.order import Order, OrderItem, save_order, get_pending_orders , clear_all_orders
 from backend.receipt import Receipt
 import sys
 import os
@@ -47,6 +47,7 @@ def main_menu():
             run_manager_cli()
         elif choice == '5':
             print("Exiting application. Goodbye!")
+            clear_all_orders()
             sys.exit(0)
         else:
             print("Invalid choice. Please try again.")
@@ -291,15 +292,80 @@ def run_kitchen_cli():
         else:
             print("Invalid option.")
 
+def view_users():
+    users = load_users()
+    print("\n" + "=" * 40)
+    print("SYSTEM USERS")
+    print("=" * 40)
+    if not users:
+        print("No users found.")
+        return
+    
+    for user in users:
+        print(f"  - {user.get_username():<15} | Role: {user.get_role().upper()}")
+    print("=" * 40)
+
+def add_user():
+    users = load_users()
+    print("\n--- ADD NEW USER ---")
+    
+    username = input("Enter new username: ").strip()
+    if not username:
+        print("ERROR: Username cannot be empty.")
+        return
+        
+    for user in users:
+        if user.get_username() == username:
+            print(f"ERROR: User '{username}' already exists.")
+            return
+
+    password = input("Enter password: ").strip()
+    if not password:
+        print("ERROR: Password cannot be empty.")
+        return
+        
+    role = input("Enter role (admin, waiter, chef): ").strip().lower()
+    if role not in ["admin", "waiter", "chef"]:
+        print("ERROR: Invalid role. Must be 'admin', 'waiter', or 'chef'.")
+        return
+
+    if role == "admin":
+        new_user = Admin(username, password)
+    elif role == "waiter":
+        new_user = Waiter(username, password)
+    elif role == "chef":
+        new_user = Chef(username, password)
+    
+    users.append(new_user)
+    save_users(users)
+    print(f"✓ Successfully added new user: {username} ({role.upper()})")
+
 def run_manager_cli():
     global CURRENT_USER
     if not CURRENT_USER or CURRENT_USER.get_role() != "admin":
         print("\nACCESS DENIED. You must log in as an ADMIN (Manager) to view the dashboard.")
         return
         
-    print("\n--- Manager Dashboard ---")
-    print(f"Welcome, {CURRENT_USER.get_username()}!")
-    print("Manager view: Here you would see revenue stats and manage users.")
+    while True:
+        print("\n--- Manager Dashboard ---")
+        print(f"Welcome, {CURRENT_USER.get_username()}!")
+        print("-" * 30)
+        print("1. View All Users")
+        print("2. Add New User")
+        print("3. Back to Main Menu")
+        print("-" * 30)
+        
+        choice = input("Enter your choice (1-3): ").strip()
+        
+        if choice == '1':
+            view_users()
+        elif choice == '2':
+            add_user()
+        elif choice == '3':
+            print("Returning to main menu...")
+            break
+        else:
+            print("Invalid choice. Please try again.")
 
 if __name__ == "__main__":
     main_menu()

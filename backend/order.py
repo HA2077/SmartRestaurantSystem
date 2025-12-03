@@ -117,7 +117,6 @@ class Order:
         order.items = [OrderItem.from_dict(item) for item in data["items"]]
         return order
 
-
 def ensure_data_dir():
     if not os.path.exists("data"):
         os.makedirs("data")
@@ -152,3 +151,12 @@ def save_order(order: Order):
 def get_pending_orders() -> List[Order]:
     orders = load_orders()
     return [o for o in orders if o.status == Order.PENDING]
+
+def clear_all_orders():
+    ensure_data_dir()
+    try:
+        with open(DATA_FILE, "w") as f:
+            f.write("")
+        print(f"All orders in {DATA_FILE} cleared successfully.")
+    except Exception as e:
+        print(f"Error clearing orders file: {e}")
