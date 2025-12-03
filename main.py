@@ -22,7 +22,6 @@ MENU_ITEMS = [
 ]
 
 def main_menu():
-    # Ensure data directory exists
     if not os.path.exists("data"):
         os.makedirs("data")
 
@@ -213,7 +212,6 @@ def run_pos_cli():
             if not current_order.items:
                 print("ERROR: Cannot submit empty order.")
             else:
-                # Update status and save to JSON
                 current_order.update_status(Order.PENDING)
                 save_order(current_order)
                 
@@ -245,7 +243,6 @@ def run_kitchen_cli():
     print(f"\n--- Kitchen Display System (Chef: {CURRENT_USER.get_username()}) ---")
     
     while True:
-        # Fetch pending orders from file
         pending_orders = get_pending_orders()
         
         print("\n" + "="*60)
@@ -277,11 +274,9 @@ def run_kitchen_cli():
             if 0 <= idx < len(pending_orders):
                 order_to_complete = pending_orders[idx]
                 
-                # 1. Update status to completed
                 order_to_complete.update_status(Order.COMPLETED)
                 save_order(order_to_complete)
                 
-                # 2. Generate and save receipt
                 receipt = Receipt(order_to_complete)
                 file_path = receipt.save_to_file()
                 

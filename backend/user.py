@@ -22,18 +22,18 @@ class User:
         return{
             "username": self.__username,
             "password": self.__password,
-            "role": self.role
+            "role": self.__role
         }
 
-class admin(User):
+class Admin(User):
     def __init__(self, username, password):
         super().__init__(username, password, "admin")
 
-class waiter(User):
+class Waiter(User):
     def __init__(self, username, password):
         super().__init__(username, password, "waiter")
 
-class chef(User):
+class Chef(User):
     def __init__(self, username, password):
         super().__init__(username, password, "chef")
 
@@ -49,11 +49,11 @@ def load_users(filename="data/users.json"):
             for user_data in data:
                 role = user_data.get("role")
                 if role == "admin":
-                    user = admin(user_data["username"], user_data["password"])
+                    user = Admin(user_data["username"], user_data["password"])
                 elif role == "waiter":
-                    user = waiter(user_data["username"], user_data["password"])
+                    user = Waiter(user_data["username"], user_data["password"])
                 elif role == "chef":
-                    user = chef(user_data["username"], user_data["password"])
+                    user = Chef(user_data["username"], user_data["password"])
                 else:
                     user = User(user_data["username"], user_data["password"], role)
                 users.append(user)

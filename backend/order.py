@@ -90,7 +90,6 @@ class Order:
             return False
         
         if new_status == self.COMPLETED and self.status != self.PROCESSING and self.status != self.PENDING:
-            # Modified logic to allow Pending -> Completed for simplicity in this task
             pass 
         
         self.status = new_status
@@ -118,7 +117,6 @@ class Order:
         order.items = [OrderItem.from_dict(item) for item in data["items"]]
         return order
 
-# --- Helper Functions for File Handling ---
 
 def ensure_data_dir():
     if not os.path.exists("data"):

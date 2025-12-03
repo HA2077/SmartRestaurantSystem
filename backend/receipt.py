@@ -102,7 +102,6 @@ class Receipt:
             raise ValueError(f"Invalid receipt type: {receipt_type}")
 
     def save_to_file(self):
-        """Saves the detailed receipt to a text file"""
         if not os.path.exists("receipts"):
             os.makedirs("receipts")
         
